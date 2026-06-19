@@ -60,7 +60,13 @@ OpenHABClient::OpenHABClient(const std::string& url,
 }
 
 void OpenHABClient::login() {
-    isCloud_ = (baseUrl_ == "https://myopenhab.org");
+    isCloud_ = (baseUrl_.find("myopenhab.org") != std::string::npos);
+    if (isCloud_) {
+        // myopenhab.org does not accept Basic Auth on /rest directly.
+        // Validation happens on the first real API call.
+        isLoggedIn_ = true;
+        return;
+    }
     try {
         auto resp = get("/rest");
         isLoggedIn_ = (resp.statusCode >= 200 && resp.statusCode < 300);
