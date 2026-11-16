@@ -32,3 +32,12 @@ if [ -n "${EXERCISE_CONF:-}" ]; then   # wait for the exercise configuration
     sleep 5
   done
 fi
+# Add-ons aus der Übungskonfiguration starten die REST API kurz neu: warten, bis sie
+# zehnmal hintereinander antwortet
+ok=0
+for i in $(seq 1 180); do
+  if [ "$(curl -s -o /dev/null -w '%{http_code}' -H "Authorization: Bearer $TOKEN" \
+          http://127.0.0.1:8080/rest/items || true)" = 200 ]; then ok=$((ok+1)); else ok=0; fi
+  [ $ok -ge 10 ] && break
+  sleep 1
+done
