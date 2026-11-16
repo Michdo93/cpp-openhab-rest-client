@@ -1,0 +1,10 @@
+prefix=@CMAKE_INSTALL_PREFIX@
+libdir=${prefix}/@CMAKE_INSTALL_LIBDIR@
+includedir=${prefix}/@CMAKE_INSTALL_INCLUDEDIR@
+
+Name: openhab_rest_client_cpp
+Description: C++17 client for the openHAB REST API (cpp-openhab-rest-client)
+Version: @PROJECT_VERSION@
+Requires: libcurl nlohmann_json
+Libs: -L${libdir} -lopenhab_rest_client_cpp
+Cflags: -I${includedir}
