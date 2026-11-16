@@ -104,7 +104,7 @@ sudo cmake --install build
 
 ```cmake
 find_package(OpenHABRestClientCpp 2 REQUIRED)
-target_link_libraries(myapp PRIVATE openhab::openhab_rest_client_cpp_static)  # or openhab::openhab_rest_client_cpp
+target_link_libraries(myapp PRIVATE openhab::rest_client_cpp)  # or openhab::rest_client_cpp_shared
 ```
 
 or without CMake: `g++ -std=c++17 main.cpp $(pkg-config --cflags --libs openhab_rest_client_cpp)`.

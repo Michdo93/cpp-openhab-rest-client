@@ -18,6 +18,13 @@ jobs:
         run: sudo apt-get update && sudo apt-get install -y libcurl4-openssl-dev nlohmann-json3-dev cmake build-essential valgrind
       - name: Build
         run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release && cmake --build build -j2
+      - name: Install and use with find_package (same target names as FetchContent)
+        run: |
+          cmake --install build --prefix $PWD/pkg
+          cmake -S test/consumer -B build-consumer -DCMAKE_PREFIX_PATH=$PWD/pkg
+          cmake --build build-consumer -j2
+          ./build-consumer/consumer_static
+          LD_LIBRARY_PATH=$PWD/pkg/lib ./build-consumer/consumer_shared
       - uses: actions/setup-java@v4
         with:
           distribution: temurin

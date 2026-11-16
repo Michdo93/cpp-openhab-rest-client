@@ -17,6 +17,9 @@ else()
   set(OPENHAB_TOP_LEVEL OFF)
 endif()
 option(OPENHAB_BUILD_TESTS "Build the tests" ${OPENHAB_TOP_LEVEL})
+# Install rules only for a top-level build: a project that pulls the library in with
+# FetchContent/add_subdirectory links it statically and installs nothing of it
+option(OPENHAB_INSTALL "Generate install rules" ${OPENHAB_TOP_LEVEL})
 
 # ── Dependencies: libcurl and nlohmann/json (installed package or download) ──
 find_package(CURL REQUIRED)
@@ -27,7 +30,7 @@ if(NOT nlohmann_json_FOUND)
   FetchContent_Declare(nlohmann_json
     URL https://github.com/nlohmann/json/releases/download/v3.11.3/json.tar.xz
     DOWNLOAD_EXTRACT_TIMESTAMP TRUE)
-  set(JSON_Install ON CACHE INTERNAL "")
+  set(JSON_Install ${OPENHAB_INSTALL} CACHE INTERNAL "")
   FetchContent_MakeAvailable(nlohmann_json)
   set(OPENHAB_JSON_BUNDLED ON)
   message(STATUS "nlohmann/json: downloaded (v3.11.3)")
@@ -82,6 +85,10 @@ if(NOT WIN32)
   set_target_properties(openhab_rest_client_cpp_static PROPERTIES OUTPUT_NAME openhab_rest_client_cpp)
 endif()
 
+# The same target names in the build tree and after find_package():
+#   openhab::rest_client_cpp (static), openhab::rest_client_cpp_shared
+set_target_properties(openhab_rest_client_cpp_static PROPERTIES EXPORT_NAME rest_client_cpp)
+set_target_properties(openhab_rest_client_cpp PROPERTIES EXPORT_NAME rest_client_cpp_shared)
 add_library(openhab::rest_client_cpp ALIAS openhab_rest_client_cpp_static)
 add_library(openhab::rest_client_cpp_shared ALIAS openhab_rest_client_cpp)
 
@@ -103,27 +110,29 @@ if(OPENHAB_BUILD_TESTS AND NOT CMAKE_CROSSCOMPILING)
 endif()
 
 # ── Install (find_package(OpenHABRestClientCpp) and pkg-config) ──────────────
-include(GNUInstallDirs)
-include(CMakePackageConfigHelpers)
-install(TARGETS openhab_rest_client_cpp openhab_rest_client_cpp_static
-  EXPORT OpenHABRestClientCppTargets
-  LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
-  ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
-  RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
-install(DIRECTORY include/ DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
-install(EXPORT OpenHABRestClientCppTargets NAMESPACE openhab::
-  DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/OpenHABRestClientCpp)
-configure_package_config_file(cmake/OpenHABRestClientCppConfig.cmake.in
-  ${CMAKE_CURRENT_BINARY_DIR}/OpenHABRestClientCppConfig.cmake
-  INSTALL_DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/OpenHABRestClientCpp)
-write_basic_package_version_file(${CMAKE_CURRENT_BINARY_DIR}/OpenHABRestClientCppConfigVersion.cmake
-  COMPATIBILITY SameMajorVersion)
-install(FILES
-  ${CMAKE_CURRENT_BINARY_DIR}/OpenHABRestClientCppConfig.cmake
-  ${CMAKE_CURRENT_BINARY_DIR}/OpenHABRestClientCppConfigVersion.cmake
-  DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/OpenHABRestClientCpp)
-configure_file(cmake/openhab_rest_client_cpp.pc.in openhab_rest_client_cpp.pc @ONLY)
-install(FILES ${CMAKE_CURRENT_BINARY_DIR}/openhab_rest_client_cpp.pc
-  DESTINATION ${CMAKE_INSTALL_LIBDIR}/pkgconfig)
+if(OPENHAB_INSTALL)
+  include(GNUInstallDirs)
+  include(CMakePackageConfigHelpers)
+  install(TARGETS openhab_rest_client_cpp openhab_rest_client_cpp_static
+    EXPORT OpenHABRestClientCppTargets
+    LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+    ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+    RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
+  install(DIRECTORY include/ DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
+  install(EXPORT OpenHABRestClientCppTargets NAMESPACE openhab::
+    DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/OpenHABRestClientCpp)
+  configure_package_config_file(cmake/OpenHABRestClientCppConfig.cmake.in
+    ${CMAKE_CURRENT_BINARY_DIR}/OpenHABRestClientCppConfig.cmake
+    INSTALL_DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/OpenHABRestClientCpp)
+  write_basic_package_version_file(${CMAKE_CURRENT_BINARY_DIR}/OpenHABRestClientCppConfigVersion.cmake
+    COMPATIBILITY SameMajorVersion)
+  install(FILES
+    ${CMAKE_CURRENT_BINARY_DIR}/OpenHABRestClientCppConfig.cmake
+    ${CMAKE_CURRENT_BINARY_DIR}/OpenHABRestClientCppConfigVersion.cmake
+    DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/OpenHABRestClientCpp)
+  configure_file(cmake/openhab_rest_client_cpp.pc.in openhab_rest_client_cpp.pc @ONLY)
+  install(FILES ${CMAKE_CURRENT_BINARY_DIR}/openhab_rest_client_cpp.pc
+    DESTINATION ${CMAKE_INSTALL_LIBDIR}/pkgconfig)
+endif()
 
 message(STATUS "cpp-openhab-rest-client ${PROJECT_VERSION}")
